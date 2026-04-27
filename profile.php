@@ -1,11 +1,15 @@
 <?php
+/**
+ * Case Study: MicroSocial - Profile Module (Website Version)
+ */
 session_start();
 
+// Simulasi data user
 if (!isset($_SESSION['user'])) {
     $_SESSION['user'] = [
-        'username' => 'Ghea Ananda',
+        'username' => 'Fahra',
         'bio'      => 'Sesi coding hari ini, file lengkap ada di sini! #webdev',
-        'photo'    => 'https://ui-avatars.com/api/?name=Ghea+Ananda&background=1d4e89&color=fff&size=128'
+        'photo'    => 'https://ui-avatars.com/api/?name=Fahra&background=1d4e89&color=fff&size=200'
     ];
 }
 
@@ -13,7 +17,7 @@ $notif = "";
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $_SESSION['user']['username'] = htmlspecialchars($_POST['username']);
     $_SESSION['user']['bio']      = htmlspecialchars($_POST['bio']);
-    $notif = "Profil berhasil diperbarui secara lokal!";
+    $notif = "Profil berhasil disimpan!";
 }
 ?>
 
@@ -22,135 +26,143 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Profile Edit - MicroSocial</title>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-    
+    <title>Edit Profile - MicroSocial Web</title>
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        {
-            box-sizing: border-box;
-            font-family: 'Inter', sans-serif;
-        }
-
+        /* CSS UNTUK TAMPILAN WEBSITE DESKTOP */
         body {
             background-color: #f0f2f5;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            margin: 0;
+            padding: 0;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
-            min-height: 100vh;
-            margin: 0;
         }
 
-        .profile-card {
-            background: white;
+        /* Navbar Sederhana agar terasa seperti Website */
+        .navbar {
             width: 100%;
-            max-width: 400px;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        }
-
-        .card-header {
-            background-color: #1d4e89; /* Warna Biru MicroSocial */
+            background-color: #1d4e89;
+            padding: 10px 0;
             color: white;
-            padding: 20px;
             text-align: center;
-            position: relative;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 40px;
         }
 
-        .card-header h2 {
+        .main-container {
+            width: 100%;
+            max-width: 800px; /* Jauh lebih lebar dari versi mobile */
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+
+        .profile-header {
+            background: #f8f9fa;
+            border-bottom: 1px solid #eee;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .profile-header h2 {
             margin: 0;
-            font-size: 18px;
-            letter-spacing: 1px;
-            text-transform: uppercase;
+            color: #1d4e89;
+            font-size: 24px;
         }
 
-        .card-body {
-            padding: 30px 25px;
+        .content-body {
+            padding: 40px;
+            display: flex; /* Menggunakan Flexbox untuk membagi Foto dan Form */
+            gap: 40px;
         }
 
-        /* Foto Profil & Ikon Plus */
-        .avatar-section {
+        /* Sisi Kiri: Foto Profil */
+        .photo-section {
+            flex: 1;
+            text-align: center;
+        }
+
+        .avatar-container {
             position: relative;
-            width: 110px;
-            margin: 0 auto 30px;
+            display: inline-block;
         }
 
         .avatar-img {
-            width: 110px;
-            height: 110px;
+            width: 180px; /* Ukuran lebih besar untuk desktop */
+            height: 180px;
             border-radius: 50%;
+            border: 5px solid #1d4e89;
             object-fit: cover;
-            border: 4px solid #f0f2f5;
         }
 
-        .btn-add-photo {
+        .btn-plus {
             position: absolute;
-            bottom: 5px;
-            right: 5px;
+            bottom: 10px;
+            right: 10px;
             background: #1d4e89;
             color: white;
-            width: 28px;
-            height: 28px;
+            width: 35px;
+            height: 35px;
             border-radius: 50%;
+            border: 3px solid white;
             display: flex;
-            justify-content: center;
             align-items: center;
-            font-size: 18px;
-            border: 2px solid white;
+            justify-content: center;
+            font-size: 20px;
             cursor: pointer;
         }
 
-        /* Form Styling */
+        /* Sisi Kanan: Input Form */
+        .form-section {
+            flex: 2;
+        }
+
         .form-group {
             margin-bottom: 20px;
         }
 
-        label {
+        .form-group label {
             display: block;
             font-weight: 600;
-            font-size: 13px;
-            color: #555;
             margin-bottom: 8px;
+            color: #333;
         }
 
         input[type="text"], textarea {
             width: 100%;
-            padding: 12px 15px;
+            padding: 12px;
             border: 1px solid #ddd;
-            border-radius: 10px;
-            font-size: 14px;
-            transition: border 0.3s;
+            border-radius: 8px;
+            font-size: 16px;
+            background: #fafafa;
         }
 
-        input[type="text"]:focus, textarea:focus {
+        input:focus, textarea:focus {
             outline: none;
             border-color: #1d4e89;
+            background: white;
         }
 
-        .char-count {
-            text-align: right;
-            font-size: 11px;
-            color: #999;
-            margin-top: 5px;
-        }
-
-        /* Buttons */
-        .button-group {
-            display: flex;
-            gap: 10px;
+        .footer-actions {
             margin-top: 30px;
+            display: flex;
+            gap: 15px;
         }
 
         .btn {
-            flex: 1;
-            padding: 12px;
-            border-radius: 10px;
+            padding: 12px 30px;
+            border-radius: 8px;
             border: none;
             font-weight: 600;
             cursor: pointer;
-            font-size: 14px;
-            transition: opacity 0.2s;
+            font-size: 16px;
+            transition: 0.3s;
         }
 
         .btn-save {
@@ -162,59 +174,63 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             background-color: #e4e6eb;
             color: #4b4b4b;
             text-decoration: none;
-            text-align: center;
         }
 
         .btn:hover {
-            opacity: 0.9;
+            filter: brightness(1.2);
         }
 
-        .alert-success {
+        .alert {
             background: #d4edda;
-            color: #155724;
-            padding: 10px;
+            padding: 15px;
             border-radius: 8px;
-            font-size: 13px;
+            margin-bottom: 20px;
+            color: #155724;
             text-align: center;
-            margin-bottom: 15px;
         }
     </style>
 </head>
 <body>
 
-<div class="profile-card">
-    <div class="card-header">
-        <h2>Profile</h2>
-    </div>
+<div class="navbar">MICROSOCIAL WEB</div>
 
-    <div class="card-body">
+<div class="main-container">
+    <div class="profile-header">
+        <h2>Edit Profile</h2>
         <?php if($notif): ?>
-            <div class="alert-success"><?= $notif ?></div>
+            <span style="color: green; font-weight: bold;"><?= $notif ?></span>
         <?php endif; ?>
-
-        <form action="" method="POST">
-            <div class="avatar-section">
-                <img src="<?= $_SESSION['user']['photo'] ?>" alt="Profile Photo" class="avatar-img">
-                <div class="btn-add-photo">+</div>
-            </div>
-
-            <div class="form-group">
-                <label>Username</label>
-                <input type="text" name="username" value="<?= $_SESSION['user']['username'] ?>" placeholder="Username" required>
-            </div>
-
-            <div class="form-group">
-                <label>Bio</label>
-                <textarea name="bio" rows="4" maxlength="250" placeholder="Tulis bio kamu..."><?= $_SESSION['user']['bio'] ?></textarea>
-                <div class="char-count">(250 char)</div>
-            </div>
-
-            <div class="button-group">
-                <button type="submit" class="btn btn-save">Save</button>
-                <a href="index.php" class="btn btn-cancel">Cancel</a>
-            </div>
-        </form>
     </div>
+
+    <form action="" method="POST">
+        <div class="content-body">
+            <div class="photo-section">
+                <div class="avatar-container">
+                    <img src="<?= $_SESSION['user']['photo'] ?>" class="avatar-img" alt="Profile">
+                    <div class="btn-plus">+</div>
+                </div>
+                <p style="font-size: 12px; color: #777; mt-2">Klik ikon + untuk ganti foto</p>
+            </div>
+
+            <div class="form-section">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" name="username" value="<?= $_SESSION['user']['username'] ?>" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Bio</label>
+                    <textarea name="bio" rows="5" maxlength="250"><?= $_SESSION['user']['bio'] ?></textarea>
+                    <div style="text-align:right; font-size: 12px; color: #999;">(250 char)</div>
+                </div>
+
+                <div class="footer-actions">
+                    <button type="submit" class="btn btn-save">Save Changes</button>
+                    <a href="index.php" class="btn btn-cancel">Cancel</a>
+                </div>
+            </div>
+        </div>
+    </form>
 </div>
 
 </body>
