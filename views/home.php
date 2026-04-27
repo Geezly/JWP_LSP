@@ -1,9 +1,4 @@
 <?php
-/**
- * Project: Personalized Social Media (Desktop Mode - Feed Only)
- * Fokus: Menggunakan kode teman dengan tambahan fitur filter hashtag
- */
-
 session_start();
 
 if (!isset($_SESSION['user_id'])) {
@@ -13,14 +8,13 @@ if (!isset($_SESSION['user_id'])) {
 
 require_once '../config/database.php';
 
-$logged_in_id       = $_SESSION['user_id'];
+$logged_in_id = $_SESSION['user_id'];
 $logged_in_username = $_SESSION['username'];
 
-// ── LOGIKA FILTER (DITAMBAHKAN) ───────────────────────────────────────────
-// Menangkap input dari bar pencarian atau klik hashtag di panel kanan
+// Filter keyword
 $keyword = isset($_GET['cari']) ? mysqli_real_escape_string($conn, $_GET['cari']) : '';
 
-// ── AKSI: LIKE / UNLIKE ──────────────────────────────────────────────────────
+// LIKE / UNLIKE
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'like') {
     $post_id = (int)$_POST['post_id'];
     $cek = $conn->prepare("SELECT id FROM likes WHERE post_id = ? AND user_id = ?");
@@ -37,27 +31,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $ins->bind_param("ii", $post_id, $logged_in_id);
         $ins->execute();
     }
-    // Redirect balik dengan tetap membawa keyword pencarian jika ada
     header("Location: home.php" . ($keyword ? "?cari=" . urlencode($keyword) : ""));
     exit;
 }
 
-// ── AKSI: TAMBAH KOMENTAR ─────────────────────────────────────────────────────
+// TAMBAH KOMENTAR
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'comment') {
     $post_id = (int)$_POST['post_id'];
-    $content = trim($conn->real_escape_string($_POST['content']));
-
+    $content = trim($_POST['comment_content'] ?? '');
+    
     if ($content !== '') {
-        $ins = $conn->prepare("INSERT INTO comments (post_id, user_id, content) VALUES (?, ?, ?)");
+        $ins = $conn->prepare("INSERT INTO comments (post_id, user_id, content, created_at) VALUES (?, ?, ?, NOW())");
         $ins->bind_param("iis", $post_id, $logged_in_id, $content);
         $ins->execute();
+        $ins->close();
     }
+    
     header("Location: home.php" . ($keyword ? "?cari=" . urlencode($keyword) : ""));
     exit;
 }
 
-// ── AMBIL POST (MODIFIKASI: DITAMBAH WHERE UNTUK FILTER) ──────────────────────
-// Jika ada keyword, tambahkan kondisi WHERE pada SQL
+// AMBIL POST
 $where_clause = $keyword ? "WHERE p.content LIKE '%$keyword%'" : "";
 
 $sql_posts = "
@@ -78,17 +72,22 @@ $result_posts = $stmt_posts->get_result();
 
 $posts = [];
 while ($row = $result_posts->fetch_assoc()) {
-    $sql_kom = "SELECT c.content, c.created_at, u.username, u.nama_lengkap, u.foto
-                FROM comments c JOIN users u ON c.user_id = u.id
-                WHERE c.post_id = ? ORDER BY c.created_at ASC";
+    $sql_kom = "SELECT c.id, c.content, c.created_at, u.username, u.nama_lengkap, u.foto
+                FROM comments c 
+                JOIN users u ON c.user_id = u.id
+                WHERE c.post_id = ? 
+                ORDER BY c.created_at ASC";
     $stmt_kom = $conn->prepare($sql_kom);
     $stmt_kom->bind_param("i", $row['id']);
     $stmt_kom->execute();
-    $row['komentar'] = $stmt_kom->get_result()->fetch_all(MYSQLI_ASSOC);
+    $result_kom = $stmt_kom->get_result();
+    $row['komentar'] = $result_kom->fetch_all(MYSQLI_ASSOC);
+    $stmt_kom->close();
     $posts[] = $row;
 }
+$stmt_posts->close();
 
-// ── TRENDING HASHTAG (Sama seperti kode temanmu) ──────────────────────────────
+// TRENDING HASHTAG
 $sql_trend = "SELECT content FROM posts ORDER BY created_at DESC LIMIT 50";
 $result_trend = $conn->query($sql_trend);
 $hashtags = [];
@@ -101,22 +100,35 @@ while ($r = $result_trend->fetch_assoc()) {
 arsort($hashtags);
 $top_hashtags = array_slice($hashtags, 0, 5, true);
 
-// ── HELPERS (Sama seperti kode temanmu) ───────────────────────────────────────
+// FUNCTIONS
 function time_ago($datetime) {
-    $now  = new DateTime();
-    $past = new DateTime($datetime);
-    $diff = $now->diff($past);
-    if ($diff->d >= 1)  return $diff->d . 'h yang lalu';
-    if ($diff->h >= 1)  return $diff->h . 'j yang lalu';
-    if ($diff->i >= 1)  return $diff->i . 'm yang lalu';
-    return 'Baru saja';
+    $timestamp = strtotime($datetime);
+    $current_time = time();
+    $difference = $current_time - $timestamp;
+    
+    if ($difference < 60) {
+        return 'Baru saja';
+    } elseif ($difference < 3600) {
+        $minutes = floor($difference / 60);
+        return $minutes . ' menit yang lalu';
+    } elseif ($difference < 86400) {
+        $hours = floor($difference / 3600);
+        return $hours . ' jam yang lalu';
+    } elseif ($difference < 604800) {
+        $days = floor($difference / 86400);
+        return $days . ' hari yang lalu';
+    } else {
+        return date('d/m/Y H:i', $timestamp);
+    }
 }
+
 function foto_url($foto) {
     if (empty($foto) || $foto === 'default.png') {
         return 'https://ui-avatars.com/api/?name=U&background=85a3db&color=fff&size=100';
     }
-    return 'uploads/' . htmlspecialchars($foto);
+    return '../uploads/' . htmlspecialchars($foto);
 }
+
 function nama_tampil($nama_lengkap, $username) {
     return !empty($nama_lengkap) ? htmlspecialchars($nama_lengkap) : htmlspecialchars($username);
 }
@@ -135,7 +147,6 @@ function nama_tampil($nama_lengkap, $username) {
             --navy: #1a2a6c;
             --accent: #1d9bf0;
             --white: #ffffff;
-            --border: #eff3f4;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; background: var(--bg-gradient); color: #333; min-height: 100vh; }
@@ -145,18 +156,18 @@ function nama_tampil($nama_lengkap, $username) {
         .nav-link { display: block; padding: 15px 20px; text-decoration: none; color: #555; font-weight: 600; border-radius: 16px; transition: 0.3s; margin-bottom: 8px; }
         .nav-link:hover { background: var(--sidebar-blue); color: var(--accent); transform: translateX(8px); }
         .nav-link.active { background: var(--main-blue); color: white; }
-        .btn-create-post { display: block; margin-top: 20px; padding: 16px; background: var(--navy); color: white; text-align: center; text-decoration: none; border-radius: 18px; font-weight: bold; box-shadow: 0 8px 20px rgba(26,42,108,0.2); transition: 0.3s; }
+        .btn-create-post { display: block; margin-top: 20px; padding: 16px; background: var(--navy); color: white; text-align: center; text-decoration: none; border-radius: 18px; font-weight: bold; }
         .feed-container { padding-top: 20px; }
-        .top-bar { background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); padding: 20px 25px; border-radius: 24px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.4); box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
-        .post-card { background: var(--white); padding: 25px; border-radius: 28px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.02); transition: 0.3s; }
-        .avatar-img { width: 50px; height: 50px; border-radius: 18px; object-fit: cover; flex-shrink: 0; background: var(--sidebar-blue); }
-        .avatar-sm { width: 32px; height: 32px; border-radius: 10px; object-fit: cover; background: var(--sidebar-blue); }
+        .top-bar { background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); padding: 20px 25px; border-radius: 24px; margin-bottom: 25px; }
+        .post-card { background: var(--white); padding: 25px; border-radius: 28px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); }
+        .avatar-img { width: 50px; height: 50px; border-radius: 18px; object-fit: cover; }
+        .avatar-sm { width: 32px; height: 32px; border-radius: 10px; object-fit: cover; }
         .user-info b { color: var(--navy); font-size: 16px; }
         .user-info span { color: #aaa; font-size: 13px; }
         .post-body { margin: 15px 0; line-height: 1.7; color: #444; font-size: 15px; }
         .post-image { width: 100%; max-height: 400px; object-fit: cover; border-radius: 16px; margin-bottom: 15px; }
         .action-bar { display: flex; gap: 25px; border-top: 1px solid #f8f8f8; padding-top: 15px; align-items: center; }
-        .action-btn { border: none; background: none; font-weight: 600; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 5px; padding: 6px 14px; border-radius: 10px; transition: 0.2s; }
+        .action-btn { border: none; background: none; font-weight: 600; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 5px; padding: 6px 14px; border-radius: 10px; }
         .btn-like { color: #bbb; }
         .btn-like.liked { color: #e0245e; }
         .btn-reply { color: var(--accent); }
@@ -164,11 +175,11 @@ function nama_tampil($nama_lengkap, $username) {
         .comment-item { display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-start; }
         .comment-bubble { background: #f7faff; border-radius: 14px; padding: 10px 14px; flex: 1; font-size: 13px; line-height: 1.5; }
         .comment-form { display: flex; gap: 10px; margin-top: 12px; align-items: center; }
-        .comment-input { flex: 1; padding: 10px 16px; border: 1px solid #eee; border-radius: 20px; outline: none; font-size: 13px; background: #fafafa; }
+        .comment-input { flex: 1; padding: 10px 16px; border: 1px solid #eee; border-radius: 20px; outline: none; font-size: 13px; }
         .btn-send { padding: 10px 18px; background: var(--navy); color: white; border: none; border-radius: 16px; font-weight: bold; cursor: pointer; }
         .right-panel { padding-top: 20px; }
         .search-box { width: 100%; padding: 16px 20px; border-radius: 20px; border: 1px solid #eee; background: white; outline: none; margin-bottom: 25px; font-size: 14px; }
-        .trend-card { background: var(--white); padding: 25px; border-radius: 24px; box-shadow: 0 5px 20px rgba(0,0,0,0.02); margin-bottom: 20px; }
+        .trend-card { background: var(--white); padding: 25px; border-radius: 24px; margin-bottom: 20px; }
         .hashtag-item { padding: 12px 0; border-bottom: 1px solid #f5f5f5; display: flex; justify-content: space-between; align-items: center; text-decoration: none; }
         .hashtag-badge { background: #f0f7ff; color: var(--accent); font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
         .user-card { background: var(--white); padding: 20px 25px; border-radius: 24px; display: flex; align-items: center; gap: 15px; }
@@ -192,8 +203,8 @@ function nama_tampil($nama_lengkap, $username) {
             <a href="post_create.php" class="btn-create-post">+ Buat Postingan</a>
         </nav>
         <div style="margin-top:auto; padding-bottom:30px;">
-    <a href="../views/logout.php" class="nav-link" style="color:#ff6b6b; font-weight: bold;">Keluar</a>
-</div>
+            <a href="logout.php" class="nav-link" style="color:#ff6b6b; font-weight: bold;">Keluar</a>
+        </div>
     </aside>
 
     <main class="feed-container">
@@ -204,7 +215,7 @@ function nama_tampil($nama_lengkap, $username) {
         </div>
 
         <?php if (empty($posts)): ?>
-            <div style="text-align:center; padding:50px; color:#aaa;">Postingan tidak ditemukan.</div>
+            <div style="text-align:center; padding:50px; color:#aaa;">Belum ada postingan. Buat postingan pertama!</div>
         <?php else: ?>
             <?php foreach ($posts as $p): ?>
                 <article class="post-card">
@@ -218,7 +229,7 @@ function nama_tampil($nama_lengkap, $username) {
                             <p class="post-body"><?= nl2br(htmlspecialchars($p['content'])) ?></p>
                             
                             <?php if (!empty($p['image'])): ?>
-                                <img src="uploads/<?= htmlspecialchars($p['image']) ?>" class="post-image">
+                                <img src="../uploads/<?= htmlspecialchars($p['image']) ?>" class="post-image">
                             <?php endif; ?>
 
                             <div class="action-bar">
@@ -239,14 +250,17 @@ function nama_tampil($nama_lengkap, $username) {
                                     <div class="comment-item">
                                         <img src="<?= foto_url($k['foto']) ?>" class="avatar-sm">
                                         <div class="comment-bubble">
-                                            <b><?= htmlspecialchars($k['username']) ?></b>: <?= htmlspecialchars($k['content']) ?>
+                                            <b><?= htmlspecialchars($k['username']) ?></b>
+                                            <small style="color:#999;"> • <?= time_ago($k['created_at']) ?></small><br>
+                                            <?= htmlspecialchars($k['content']) ?>
                                         </div>
                                     </div>
                                 <?php endforeach; ?>
+                                
                                 <form method="POST" class="comment-form">
                                     <input type="hidden" name="post_id" value="<?= $p['id'] ?>">
                                     <input type="hidden" name="action" value="comment">
-                                    <input type="text" name="content" class="comment-input" placeholder="Balas..." required>
+                                    <input type="text" name="comment_content" class="comment-input" placeholder="Tulis komentar..." required>
                                     <button type="submit" class="btn-send">Kirim</button>
                                 </form>
                             </div>
@@ -293,7 +307,11 @@ function nama_tampil($nama_lengkap, $username) {
 <script>
 function toggleKomentar(postId) {
     const el = document.getElementById('kom-' + postId);
-    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    if (el.style.display === 'none' || el.style.display === '') {
+        el.style.display = 'block';
+    } else {
+        el.style.display = 'none';
+    }
 }
 </script>
 
