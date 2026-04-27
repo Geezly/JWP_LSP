@@ -209,7 +209,7 @@ function nama_tampil($nama_lengkap, $username) {
             <a href="post_create.php" class="btn-create-post">+ Buat Postingan</a>
         </nav>
         <div style="margin-top:auto; padding-bottom:30px;">
-            <a href="../logout.php" class="nav-link" style="color:#ff6b6b; font-weight: bold;">Keluar</a>
+            <a href="../views/logout.php" class="nav-link" style="color:#ff6b6b; font-weight: bold;">Keluar</a>
         </div>
     </aside>
 
