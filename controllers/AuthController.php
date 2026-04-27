@@ -1,76 +1,70 @@
 <?php
-// controllers/AuthController.php
-require_once 'config/database.php';
-require_once 'models/UserModel.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../models/UserModel.php';
 
 class AuthController {
     private $userModel;
-    private $db;
 
     public function __construct($conn) {
-        $this->db = $conn;
         $this->userModel = new UserModel($conn);
     }
 
-    /**
-     * Logika untuk pendaftaran user baru
-     */
     public function handleRegister() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
-            $username = $_POST['username'];
-            $password = $_POST['password'];
+        $error = '';
+        $success = '';
 
-            if ($this->userModel->register($username, $password)) {
-                echo "<script>alert('Berhasil daftar! Silakan login.'); window.location='login.php';</script>";
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $username = trim($_POST['username'] ?? '');
+            $password = $_POST['password'] ?? '';
+
+            if (empty($username) || empty($password)) {
+                $error = "Username dan password wajib diisi.";
+            } elseif (strlen($password) < 6) {
+                $error = "Password minimal 6 karakter.";
             } else {
-                echo "<script>alert('Gagal daftar. Username mungkin sudah ada.');</script>";
+                if ($this->userModel->register($username, $password)) {
+                    $success = "Akun berhasil dibuat! Silakan login.";
+                } else {
+                    $error = "Username sudah digunakan. Coba yang lain.";
+                }
             }
         }
+
+        return ['error' => $error, 'success' => $success];
     }
 
-    /**
-     * Logika untuk login user
-     */
     public function handleLogin() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
-            $username = $_POST['username'];
-            $password = $_POST['password'];
+        $error = '';
 
-            // Mencari user berdasarkan username melalui model
-            $user = $this->userModel->getUserByUsername($username);
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $username = trim($_POST['username'] ?? '');
+            $password = $_POST['password'] ?? '';
 
-            if ($user) {
-                // Verifikasi password yang di-hash
-                if (password_verify($password, $user['password'])) {
-                    // Mulai session dan simpan data user
-                    if (session_status() === PHP_SESSION_NONE) {
-                        session_start();
-                    }
-                    
-                    $_SESSION['user_id'] = $user['id'];
+            if (empty($username) || empty($password)) {
+                $error = "Username dan password wajib diisi.";
+            } else {
+                $user = $this->userModel->getUserByUsername($username);
+
+                if ($user && password_verify($password, $user['password'])) {
+                    if (session_status() === PHP_SESSION_NONE) session_start();
+                    $_SESSION['user_id']  = $user['id'];
                     $_SESSION['username'] = $user['username'];
-
-                    // Arahkan ke halaman utama/timeline
-                    header("Location: index.php");
+                    header("Location: ../views/home.php");
                     exit();
                 } else {
-                    return "Password salah!";
+                    $error = "Username atau password salah.";
                 }
-            } else {
-                return "Username tidak ditemukan!";
             }
         }
+
+        return ['error' => $error];
     }
 
-    /**
-     * Logika untuk logout
-     */
     public function logout() {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
+        if (session_status() === PHP_SESSION_NONE) session_start();
         session_destroy();
-        header("Location: login.php");
+        header("Location: ../views/login.php");
         exit();
     }
 }
+?>
