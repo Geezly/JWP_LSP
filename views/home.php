@@ -1,19 +1,28 @@
 <?php
 /**
- * Project: Premium X-Style (Light Blue Theme)
- * Deskripsi: Desain Modern, Clean, dan High-End untuk LSP.
+ * Project: Personalized Social Media (Desktop Mode - Feed Only)
+ * Tema: Soft Blue & Navy (Clean Aesthetic)
  */
 
+// Simulasi data dari database
 $posts = [
     [
         'id' => 1,
-        'nama' => 'Fahra Claudia',
-        'username' => '@fahra_claudia',
-        'isi' => 'Membangun ekosistem digital yang bersih dan minimalis. Desain ini menggunakan skema warna Blue Sky. 🚀 #Creative #WebDev',
-        'waktu' => 'Sekarang',
+        'nama' => 'Fahra Claudia Avina',
+        'username' => '@fahra_avina',
+        'isi' => 'Selamat datang di tampilan baru aplikasi saya! Sekarang area posting sudah dipisah agar lebih fokus. Klik tombol biru di kiri untuk mencoba.',
+        'waktu' => '2j',
         'komentar' => [
-            ['user' => '@ui_ux_designer', 'teks' => 'Visualnya sangat nyaman di mata!']
+            ['user' => '@admin', 'teks' => 'Desainnya makin keren, Fahra!']
         ]
+    ],
+    [
+        'id' => 2,
+        'nama' => 'User Testing',
+        'username' => '@test_user',
+        'isi' => 'Mencoba filter hashtag untuk tugas LSP nanti. #coding #webdev #LSP2026',
+        'waktu' => '5j',
+        'komentar' => []
     ]
 ];
 ?>
@@ -23,163 +32,216 @@ $posts = [
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Beranda / Premium Interaction</title>
+    <title>Beranda / Interaksi</title>
     <style>
-        /* 1. VARIABEL WARNA (Agar gampang dijelaskan) */
         :root {
-            --primary-blue: #e3f2fd; /* Biru sangat muda untuk bg */
-            --accent-blue: #1d9bf0;  /* Biru X untuk tombol */
-            --soft-blue: #85a3db;    /* Biru muda pilihanmu */
-            --glass: rgba(255, 255, 255, 0.8);
+            --bg-gradient: linear-gradient(135deg, #fdfbfb 0%, #e3f2fd 100%);
+            --sidebar-blue: #f0f7ff;
+            --main-blue: #85a3db;
+            --navy: #1a2a6c;
+            --accent: #1d9bf0;
+            --white: #ffffff;
+            --border: #eff3f4;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
         body { 
             font-family: 'Inter', -apple-system, sans-serif; 
-            background: linear-gradient(135deg, #f5f7fa 0%, #e3f2fd 100%);
-            color: #1a1a1a;
+            background: var(--bg-gradient);
+            color: #333;
             min-height: 100vh;
-            display: flex;
-            justify-content: center;
         }
 
-        .container {
-            width: 100%;
-            max-width: 650px;
-            background: var(--glass);
-            backdrop-filter: blur(10px);
-            border-left: 1px solid rgba(255,255,255,0.3);
-            border-right: 1px solid rgba(255,255,255,0.3);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.05);
+        .desktop-wrapper {
+            display: grid;
+            grid-template-columns: 280px 1fr 320px;
+            max-width: 1300px;
+            margin: 0 auto;
+            gap: 20px;
+            padding: 0 20px;
         }
 
-        /* 2. HEADER MODEREN */
-        header {
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.9);
+        /* --- SIDEBAR KIRI --- */
+        .side-nav {
+            height: 100vh;
             position: sticky;
             top: 0;
-            z-index: 100;
-            border-bottom: 1px solid #f0f0f0;
+            padding-top: 30px;
+            display: flex;
+            flex-direction: column;
         }
-        header h2 { font-weight: 900; letter-spacing: -0.5px; color: var(--soft-blue); }
+        .brand-logo {
+            font-size: 26px;
+            font-weight: 900;
+            color: var(--navy);
+            margin-bottom: 40px;
+            padding-left: 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .nav-link {
+            display: block;
+            padding: 15px 20px;
+            text-decoration: none;
+            color: #555;
+            font-weight: 600;
+            border-radius: 16px;
+            transition: 0.3s;
+            margin-bottom: 8px;
+        }
+        .nav-link:hover {
+            background: var(--sidebar-blue);
+            color: var(--accent);
+            transform: translateX(8px);
+        }
+        .nav-link.active {
+            background: var(--main-blue);
+            color: white;
+        }
+        .btn-create-post {
+            display: block;
+            margin-top: 20px;
+            padding: 16px;
+            background: var(--navy);
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 18px;
+            font-weight: bold;
+            box-shadow: 0 8px 20px rgba(26, 42, 108, 0.2);
+            transition: 0.3s;
+        }
+        .btn-create-post:hover {
+            transform: scale(1.03);
+            box-shadow: 0 10px 25px rgba(26, 42, 108, 0.3);
+        }
 
-        /* 3. COMPOSER (Input Area) */
-        .composer {
-            padding: 25px;
-            background: white;
-            margin: 15px;
+        /* --- FEED TENGAH --- */
+        .feed-container {
+            padding-top: 20px;
+        }
+        .top-bar {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            padding: 20px 25px;
             border-radius: 24px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255,255,255,0.4);
             box-shadow: 0 4px 15px rgba(0,0,0,0.02);
         }
-        .avatar {
+
+        .post-card {
+            background: var(--white);
+            padding: 25px;
+            border-radius: 28px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+            border: 1px solid rgba(0,0,0,0.02);
+            transition: 0.3s;
+        }
+        .post-card:hover { transform: translateY(-3px); }
+        
+        .avatar-circle {
             width: 50px; height: 50px;
-            border-radius: 30px; /* Sudut kotak tumpul (squircle) */
-            background: var(--soft-blue);
+            background: var(--sidebar-blue);
+            border-radius: 18px;
             flex-shrink: 0;
         }
-        textarea {
-            width: 100%; border: none; outline: none;
-            font-size: 18px; resize: none; padding: 10px;
-            font-family: inherit; margin-bottom: 15px;
-        }
-        .btn-post {
-            background: var(--accent-blue);
-            color: white; border: none;
-            padding: 12px 28px; border-radius: 14px;
-            font-weight: bold; cursor: pointer;
-            box-shadow: 0 4px 12px rgba(29, 155, 240, 0.3);
-            transition: 0.3s;
-        }
-        .btn-post:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(29, 155, 240, 0.4); }
 
-        /* 4. FEED CARD */
-        .post-card {
-            background: white;
-            margin: 0 15px 15px 15px;
-            padding: 20px;
+        .user-info b { color: var(--navy); font-size: 16px; }
+        .user-info span { color: #aaa; font-size: 13px; }
+        .post-body { margin: 15px 0; line-height: 1.7; color: #444; font-size: 15px; }
+
+        /* --- PANEL KANAN --- */
+        .right-panel { padding-top: 20px; }
+        .search-box {
+            width: 100%; padding: 16px 20px;
+            border-radius: 20px; border: 1px solid #eee;
+            background: white; outline: none; margin-bottom: 25px;
+        }
+        .trend-card {
+            background: var(--white);
+            padding: 25px;
             border-radius: 24px;
-            display: flex; gap: 15px;
-            transition: 0.3s;
-            border: 1px solid transparent;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.02);
         }
-        .post-card:hover { 
-            border-color: var(--soft-blue);
-            transform: scale(1.01);
-        }
-        
-        .post-user b { font-size: 16px; color: #111; }
-        .post-user span { color: #888; font-size: 14px; }
-        .post-text { margin: 10px 0; line-height: 1.6; font-size: 15px; }
-
-        /* 5. INTERACTION (Reply) */
-        .reply-box {
-            background: #f8faff;
-            padding: 15px;
-            border-radius: 18px;
-            margin-top: 15px;
-        }
-        .reply-item { font-size: 13px; margin-bottom: 8px; border-left: 3px solid var(--soft-blue); padding-left: 10px; }
-        
-        .input-reply {
-            width: 100%; background: white; border: 1px solid #eee;
-            padding: 10px 15px; border-radius: 12px; font-size: 13px;
-            outline: none;
-        }
-
     </style>
 </head>
 <body>
 
-<div class="container">
-    <header>
-        <h2>Home</h2>
-    </header>
-
-    <div class="composer">
-        <div style="display: flex; gap: 15px;">
-            <div class="avatar"></div>
-            <div style="flex: 1;">
-                <form action="#" method="POST">
-                    <textarea maxlength="250" placeholder="Apa cerita hari ini?"></textarea>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <input type="file" style="font-size: 12px;">
-                        <button type="submit" class="btn-post">Post</button>
-                    </div>
-                </form>
-            </div>
+<div class="desktop-wrapper">
+    
+    <aside class="side-nav">
+        <div class="brand-logo">
+            <div style="width:12px; height:35px; background:var(--main-blue); border-radius:6px;"></div>
+            Interaksi
         </div>
-    </div>
+        
+        <nav>
+            <a href="home.php" class="nav-link active">Eksplorasi</a>
+            <a href="#" class="nav-link">Pesan Terkirim</a>
+            <a href="#" class="nav-link">Notifikasi</a>
+            <a href="profile.php" class="nav-link">Profil Saya</a>
+            
+            <a href="post_create.php" class="btn-create-post">+ Buat Postingan</a>
+        </nav>
 
-    <?php foreach ($posts as $p): ?>
-    <div class="post-card">
-        <div class="avatar" style="background: #e0e0e0; width: 45px; height: 45px;"></div>
-        <div style="flex: 1;">
-            <div style="display: flex; justify-content: space-between;">
-                <div class="post-user">
-                    <b><?php echo $p['nama']; ?></b> 
-                    <span><?php echo $p['username']; ?></span>
+        <div style="margin-top: auto; padding-bottom: 30px;">
+            <a href="logout.php" class="nav-link" style="color: #ff6b6b;">Keluar</a>
+        </div>
+    </aside>
+
+    <main class="feed-container">
+        <div class="top-bar">
+            <h2 style="font-size: 20px; color: var(--navy); font-weight: 800;">Feed Terbaru</h2>
+        </div>
+
+        <?php foreach ($posts as $p): ?>
+        <article class="post-card">
+            <div style="display: flex; gap: 18px;">
+                <div class="avatar-circle"></div>
+                <div style="flex: 1;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div class="user-info">
+                            <b><?php echo $p['nama']; ?></b><br>
+                            <span><?php echo $p['username']; ?> • <?php echo $p['waktu']; ?></span>
+                        </div>
+                        <div style="font-size: 12px; color: #ccc;">•••</div>
+                    </div>
+                    
+                    <p class="post-body"><?php echo $p['isi']; ?></p>
+
+                    <div style="display: flex; gap: 25px; border-top: 1px solid #f8f8f8; padding-top: 15px;">
+                        <button style="border:none; background:none; color:var(--soft-blue); font-weight:600; cursor:pointer; font-size:13px;">Balas</button>
+                        <button style="border:none; background:none; color:#bbb; font-weight:600; cursor:pointer; font-size:13px;">Suka</button>
+                    </div>
                 </div>
-                <div style="display: flex; gap: 10px;">
-                    <a href="#" style="font-size: 12px; color: var(--soft-blue); text-decoration: none;">Ubah</a>
-                    <a href="#" style="font-size: 12px; color: #ff6b6b; text-decoration: none;">Hapus</a>
-                </div>
+            </div>
+        </article>
+        <?php endforeach; ?>
+    </main>
+
+    <aside class="right-panel">
+        <input type="text" class="search-box" placeholder="Cari topik...">
+        
+        <div class="trend-card">
+            <h3 style="font-size: 17px; margin-bottom: 20px; color: var(--navy); font-weight: 800;">Lagi Hangat</h3>
+            
+            <div style="margin-bottom: 18px;">
+                <p style="font-size: 12px; color: #aaa; margin-bottom: 4px;">Paling Dicari</p>
+                <p style="font-weight: bold; font-size: 14px; color: var(--navy);">#LSP_RekayasaPerangkatLunak</p>
             </div>
             
-            <p class="post-text"><?php echo $p['isi']; ?></p>
-
-            <div class="reply-box">
-                <?php foreach ($p['komentar'] as $k): ?>
-                    <div class="reply-item">
-                        <b style="color: var(--accent-blue);"><?php echo $k['user']; ?></b>: <?php echo $k['teks']; ?>
-                    </div>
-                <?php endforeach; ?>
-                <input type="text" class="input-reply" placeholder="Balas postingan ini...">
+            <div style="margin-bottom: 18px;">
+                <p style="font-size: 12px; color: #aaa; margin-bottom: 4px;">Sedang Tren</p>
+                <p style="font-weight: bold; font-size: 14px; color: var(--navy);">#FigmaToCode</p>
             </div>
+
+            <a href="#" style="color: var(--accent); text-decoration: none; font-size: 13px; font-weight: 600;">Tampilkan lainnya</a>
         </div>
-    </div>
-    <?php endforeach; ?>
+    </aside>
+
 </div>
 
 </body>
