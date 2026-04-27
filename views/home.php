@@ -1,7 +1,7 @@
 <?php
 /**
- * Project: Personalized Social Media (Desktop Mode - Feed Only)
- * Fokus: Menggunakan kode teman dengan tambahan fitur filter hashtag
+ * Project: Interaksi - Final Fix
+ * Fitur: Filter Hashtag, Sorting Terbaru/Terlama, & Logout Fix
  */
 
 session_start();
@@ -16,9 +16,10 @@ require_once '../config/database.php';
 $logged_in_id       = $_SESSION['user_id'];
 $logged_in_username = $_SESSION['username'];
 
-// ── LOGIKA FILTER (DITAMBAHKAN) ───────────────────────────────────────────
-// Menangkap input dari bar pencarian atau klik hashtag di panel kanan
+// ── LOGIKA FILTER & SORTING ───────────────────────────────────────────────
 $keyword = isset($_GET['cari']) ? mysqli_real_escape_string($conn, $_GET['cari']) : '';
+// Menentukan urutan: DESC (Terbaru) atau ASC (Terlama)
+$sort = (isset($_GET['sort']) && $_GET['sort'] === 'asc') ? 'ASC' : 'DESC';
 
 // ── AKSI: LIKE / UNLIKE ──────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'like') {
@@ -37,8 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $ins->bind_param("ii", $post_id, $logged_in_id);
         $ins->execute();
     }
-    // Redirect balik dengan tetap membawa keyword pencarian jika ada
-    header("Location: home.php" . ($keyword ? "?cari=" . urlencode($keyword) : ""));
+    header("Location: home.php?sort=" . strtolower($sort) . ($keyword ? "&cari=" . urlencode($keyword) : ""));
     exit;
 }
 
@@ -52,12 +52,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $ins->bind_param("iis", $post_id, $logged_in_id, $content);
         $ins->execute();
     }
-    header("Location: home.php" . ($keyword ? "?cari=" . urlencode($keyword) : ""));
+    header("Location: home.php?sort=" . strtolower($sort) . ($keyword ? "&cari=" . urlencode($keyword) : ""));
     exit;
 }
 
-// ── AMBIL POST (MODIFIKASI: DITAMBAH WHERE UNTUK FILTER) ──────────────────────
-// Jika ada keyword, tambahkan kondisi WHERE pada SQL
+// ── AMBIL POST DENGAN FILTER & SORTING ────────────────────────────────────────
 $where_clause = $keyword ? "WHERE p.content LIKE '%$keyword%'" : "";
 
 $sql_posts = "
@@ -69,8 +68,9 @@ $sql_posts = "
     FROM posts p
     JOIN users u ON p.user_id = u.id
     $where_clause
-    ORDER BY p.created_at DESC
+    ORDER BY p.created_at $sort
 ";
+
 $stmt_posts = $conn->prepare($sql_posts);
 $stmt_posts->bind_param("i", $logged_in_id);
 $stmt_posts->execute();
@@ -88,7 +88,7 @@ while ($row = $result_posts->fetch_assoc()) {
     $posts[] = $row;
 }
 
-// ── TRENDING HASHTAG (Sama seperti kode temanmu) ──────────────────────────────
+// ── TRENDING HASHTAG ──────────────────────────────────────────────────────────
 $sql_trend = "SELECT content FROM posts ORDER BY created_at DESC LIMIT 50";
 $result_trend = $conn->query($sql_trend);
 $hashtags = [];
@@ -101,14 +101,14 @@ while ($r = $result_trend->fetch_assoc()) {
 arsort($hashtags);
 $top_hashtags = array_slice($hashtags, 0, 5, true);
 
-// ── HELPERS (Sama seperti kode temanmu) ───────────────────────────────────────
+// ── HELPERS ───────────────────────────────────────────────────────────────────
 function time_ago($datetime) {
     $now  = new DateTime();
     $past = new DateTime($datetime);
     $diff = $now->diff($past);
-    if ($diff->d >= 1)  return $diff->d . 'h yang lalu';
-    if ($diff->h >= 1)  return $diff->h . 'j yang lalu';
-    if ($diff->i >= 1)  return $diff->i . 'm yang lalu';
+    if ($diff->d >= 1)  return $diff->d . 'h';
+    if ($diff->h >= 1)  return $diff->h . 'j';
+    if ($diff->i >= 1)  return $diff->i . 'm';
     return 'Baru saja';
 }
 function foto_url($foto) {
@@ -151,15 +151,12 @@ function nama_tampil($nama_lengkap, $username) {
         .post-card { background: var(--white); padding: 25px; border-radius: 28px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.02); transition: 0.3s; }
         .avatar-img { width: 50px; height: 50px; border-radius: 18px; object-fit: cover; flex-shrink: 0; background: var(--sidebar-blue); }
         .avatar-sm { width: 32px; height: 32px; border-radius: 10px; object-fit: cover; background: var(--sidebar-blue); }
-        .user-info b { color: var(--navy); font-size: 16px; }
-        .user-info span { color: #aaa; font-size: 13px; }
         .post-body { margin: 15px 0; line-height: 1.7; color: #444; font-size: 15px; }
         .post-image { width: 100%; max-height: 400px; object-fit: cover; border-radius: 16px; margin-bottom: 15px; }
         .action-bar { display: flex; gap: 25px; border-top: 1px solid #f8f8f8; padding-top: 15px; align-items: center; }
         .action-btn { border: none; background: none; font-weight: 600; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 5px; padding: 6px 14px; border-radius: 10px; transition: 0.2s; }
         .btn-like { color: #bbb; }
         .btn-like.liked { color: #e0245e; }
-        .btn-reply { color: var(--accent); }
         .comment-section { margin-top: 15px; padding-top: 15px; border-top: 1px dashed #eee; }
         .comment-item { display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-start; }
         .comment-bubble { background: #f7faff; border-radius: 14px; padding: 10px 14px; flex: 1; font-size: 13px; line-height: 1.5; }
@@ -173,6 +170,10 @@ function nama_tampil($nama_lengkap, $username) {
         .hashtag-badge { background: #f0f7ff; color: var(--accent); font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
         .user-card { background: var(--white); padding: 20px 25px; border-radius: 24px; display: flex; align-items: center; gap: 15px; }
         .user-card img { width: 48px; height: 48px; border-radius: 14px; object-fit: cover; }
+        /* Style baru untuk tombol sort */
+        .sort-btn { text-decoration: none; font-size: 12px; padding: 8px 16px; border-radius: 20px; border: 1px solid #eee; font-weight: bold; transition: 0.3s; }
+        .sort-btn.active { background: var(--navy); color: white; border-color: var(--navy); }
+        .sort-btn.inactive { background: white; color: #555; }
     </style>
 </head>
 <body>
@@ -192,8 +193,8 @@ function nama_tampil($nama_lengkap, $username) {
             <a href="post_create.php" class="btn-create-post">+ Buat Postingan</a>
         </nav>
         <div style="margin-top:auto; padding-bottom:30px;">
-    <a href="../views/logout.php" class="nav-link" style="color:#ff6b6b; font-weight: bold;">Keluar</a>
-</div>
+            <a href="../logout.php" class="nav-link" style="color:#ff6b6b; font-weight: bold;">Keluar</a>
+        </div>
     </aside>
 
     <main class="feed-container">
@@ -201,6 +202,14 @@ function nama_tampil($nama_lengkap, $username) {
             <h2 style="font-size:20px;color:var(--navy);font-weight:800;">
                 <?= $keyword ? "Mencari: " . htmlspecialchars($keyword) : "Feed Terbaru" ?>
             </h2>
+        </div>
+
+        <div style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
+            <span style="font-size: 13px; color: #888; font-weight: 600;">Urutan:</span>
+            <a href="home.php?sort=desc<?= $keyword ? '&cari='.urlencode($keyword) : '' ?>" 
+               class="sort-btn <?= $sort === 'DESC' ? 'active' : 'inactive' ?>">Terbaru ✨</a>
+            <a href="home.php?sort=asc<?= $keyword ? '&cari='.urlencode($keyword) : '' ?>" 
+               class="sort-btn <?= $sort === 'ASC' ? 'active' : 'inactive' ?>">Terlama 🕒</a>
         </div>
 
         <?php if (empty($posts)): ?>
@@ -212,8 +221,8 @@ function nama_tampil($nama_lengkap, $username) {
                         <img src="<?= foto_url($p['foto']) ?>" class="avatar-img">
                         <div style="flex:1;">
                             <div class="user-info">
-                                <b><?= nama_tampil($p['nama_lengkap'], $p['username']) ?></b><br>
-                                <span>@<?= htmlspecialchars($p['username']) ?> • <?= time_ago($p['created_at']) ?></span>
+                                <b style="color:var(--navy);"><?= nama_tampil($p['nama_lengkap'], $p['username']) ?></b><br>
+                                <span style="color:#aaa; font-size:13px;">@<?= htmlspecialchars($p['username']) ?> • <?= time_ago($p['created_at']) ?></span>
                             </div>
                             <p class="post-body"><?= nl2br(htmlspecialchars($p['content'])) ?></p>
                             
@@ -229,7 +238,7 @@ function nama_tampil($nama_lengkap, $username) {
                                         <?= $p['sudah_like'] ? '❤️' : '🤍' ?> <?= $p['jumlah_like'] ?>
                                     </button>
                                 </form>
-                                <button class="action-btn btn-reply" onclick="toggleKomentar(<?= $p['id'] ?>)">
+                                <button class="action-btn" style="color:var(--accent);" onclick="toggleKomentar(<?= $p['id'] ?>)">
                                     💬 <?= count($p['komentar']) ?> Balas
                                 </button>
                             </div>
@@ -259,6 +268,7 @@ function nama_tampil($nama_lengkap, $username) {
 
     <aside class="right-panel">
         <form action="home.php" method="GET">
+            <input type="hidden" name="sort" value="<?= strtolower($sort) ?>">
             <input type="text" name="cari" class="search-box" placeholder="Cari #hashtag atau topik..." value="<?= htmlspecialchars($keyword) ?>">
         </form>
 
@@ -280,7 +290,7 @@ function nama_tampil($nama_lengkap, $username) {
         <div class="trend-card">
             <h3 style="font-size:17px;margin-bottom:20px;color:var(--navy);font-weight:800;">Lagi Hangat 🔥</h3>
             <?php foreach ($top_hashtags as $tag => $count): ?>
-                <a href="home.php?cari=<?= urlencode($tag) ?>" class="hashtag-item">
+                <a href="home.php?cari=<?= urlencode($tag) ?>&sort=<?= strtolower($sort) ?>" class="hashtag-item">
                     <span style="font-weight:700;color:var(--navy);font-size:14px;"><?= htmlspecialchars($tag) ?></span>
                     <span class="hashtag-badge"><?= $count ?> post</span>
                 </a>
