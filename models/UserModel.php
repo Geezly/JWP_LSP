@@ -21,4 +21,18 @@ class UserModel {
         }
         return false;
     }
+    public function getUserByUsername($username) {
+        $query = "SELECT * FROM users WHERE username = ?";
+        $stmt = mysqli_prepare($this->db, $query);
+        
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, "s", $username);
+            mysqli_stmt_execute($stmt);
+            $result = mysqli_stmt_get_result($stmt);
+            $user = mysqli_fetch_assoc($result); // Mengambil data user sebagai array
+            mysqli_stmt_close($stmt);
+            return $user;
+        }
+        return null;
+    }
 }

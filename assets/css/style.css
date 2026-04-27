@@ -1,0 +1,104 @@
+/* assets/css/style.css */
+
+/* Reset Dasar */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Poppins', sans-serif; /* Gunakan font modern */
+    background: radial-gradient(circle, #20232a 0%, #101114 100%); /* Background gradasi gelap */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    color: white;
+}
+
+/* Container Form */
+.login-container {
+    width: 320px;
+    padding: 40px;
+    background: rgba(255, 255, 255, 0.03); /* Semi-transparan */
+    border-radius: 20px;
+    backdrop-filter: blur(10px); /* Efek blur kaca modern */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+    text-align: center;
+}
+
+/* Logo */
+.logo {
+    font-size: 40px;
+    font-weight: bold;
+    color: #1DA1F2; /* Biru khas sosmed */
+    margin-bottom: 30px;
+    text-shadow: 0 0 15px #1DA1F2; /* Efek glow neon */
+}
+
+/* Grup Input */
+.input-group {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.input-group i {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.input-group input {
+    width: 100%;
+    padding: 15px 15px 15px 45px; /* Spasi untuk ikon */
+    background: rgba(0, 0, 0, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 30px; /* Sudut membulat modern */
+    color: white;
+    font-size: 16px;
+    transition: 0.3s;
+}
+
+/* Efek saat Kolom Input Aktif */
+.input-group input:focus {
+    border-color: #1DA1F2;
+    box-shadow: 0 0 10px rgba(29, 161, 242, 0.5); /* Neon Glow */
+    outline: none;
+}
+
+/* Tombol Masuk */
+.btn-login {
+    width: 100%;
+    padding: 15px;
+    background: linear-gradient(45deg, #1DA1F2, #00cdac); /* Gradasi premium */
+    color: white;
+    border: none;
+    border-radius: 30px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.btn-login:hover {
+    transform: translateY(-2px); /* Efek angkat saat di-hover */
+    box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+}
+
+/* Tautan Daftar */
+.footer-links {
+    margin-top: 20px;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.footer-links a {
+    color: #1DA1F2;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.footer-links a:hover {
+    text-decoration: underline;
+}
