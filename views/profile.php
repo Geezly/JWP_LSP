@@ -15,6 +15,15 @@ $logged_in_id = $_SESSION['user_id'];
 $notif        = "";
 $error        = "";
 
+// Notif dari redirect post_create.php
+if (isset($_GET['notif']) && $_GET['notif'] === 'post_success') {
+    $notif = "Post berhasil dipublikasikan!";
+}
+// Notif dari redirect edit profil
+if (isset($_GET['notif']) && $_GET['notif'] === 'profile_success') {
+    $notif = "Profil berhasil disimpan!";
+}
+
 // ── PROSES SIMPAN PROFIL ──────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
@@ -66,7 +75,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 $st->execute();
                 $_SESSION['username'] = $username;
-                $notif = "Profil berhasil disimpan!";
+                header("Location: profile.php?notif=profile_success");
+                exit;
             }
         }
     }

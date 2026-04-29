@@ -18,12 +18,21 @@ $stmt_user->execute();
 $current_user = $stmt_user->get_result()->fetch_assoc();
 
 // ============================================================
+// FUNGSI EKSTRAK HASHTAG
+// ============================================================
+function extractHashtags($text) {
+    preg_match_all('/#([a-zA-Z0-9_]+)/', $text, $matches);
+    return array_unique($matches[1]);
+}
+
+// ============================================================
 // PROSES SEARCH HASHTAG
 // ============================================================
 $search_hashtag = '';
 if (isset($_GET['search']) && !empty($_GET['search'])) {
     $search_hashtag = trim($_GET['search']);
     $search_hashtag = ltrim($search_hashtag, '#');
+    $search_hashtag = strtolower($search_hashtag);
 }
 
 // ============================================================
@@ -53,6 +62,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_comment'])) {
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("iiss", $post_id, $logged_in_id, $content, $gambar_komentar);
         $stmt->execute();
+        
+        // Ambil ID komentar yang baru saja disimpan
+        $comment_id = $conn->insert_id;
+        
+        // Ekstrak dan simpan hashtag dari komentar
+        $hashtags = extractHashtags($content);
+        if (!empty($hashtags)) {
+            $stmt_tag = $conn->prepare("INSERT INTO comment_hashtags (comment_id, hashtag) VALUES (?, ?)");
+            foreach ($hashtags as $tag) {
+                $tag = strtolower($tag);
+                $stmt_tag->bind_param("is", $comment_id, $tag);
+                $stmt_tag->execute();
+            }
+        }
         
         header("Location: home.php" . ($search_hashtag ? "?search=" . urlencode($search_hashtag) : ""));
         exit;
@@ -85,20 +108,26 @@ if (isset($_GET['like'])) {
 }
 
 // ============================================================
-// AMBIL POSTINGAN (FILTER HASHTAG)
+// AMBIL POSTINGAN (FILTER HASHTAG - termasuk dari komentar)
 // ============================================================
 if (!empty($search_hashtag)) {
-    $sql_posts = "SELECT p.*, u.username, u.nama_lengkap, u.foto as user_foto,
+    $sql_posts = "SELECT DISTINCT p.*, u.username, u.nama_lengkap, u.foto as user_foto,
                   (SELECT COUNT(*) FROM likes WHERE post_id = p.id) as like_count,
                   (SELECT COUNT(*) FROM comments WHERE post_id = p.id) as comment_count,
                   (SELECT COUNT(*) FROM likes WHERE post_id = p.id AND user_id = ?) as user_liked
                   FROM posts p
                   JOIN users u ON p.user_id = u.id
-                  WHERE p.content LIKE ?
+                  WHERE LOWER(p.content) LIKE ?
+                     OR p.id IN (
+                         SELECT DISTINCT c.post_id 
+                         FROM comments c
+                         JOIN comment_hashtags ch ON c.id = ch.comment_id
+                         WHERE ch.hashtag = ?
+                     )
                   ORDER BY p.created_at DESC";
     $stmt_posts = $conn->prepare($sql_posts);
     $like_param = "%#" . $search_hashtag . "%";
-    $stmt_posts->bind_param("is", $logged_in_id, $like_param);
+    $stmt_posts->bind_param("iss", $logged_in_id, $like_param, $search_hashtag);
 } else {
     $sql_posts = "SELECT p.*, u.username, u.nama_lengkap, u.foto as user_foto,
                   (SELECT COUNT(*) FROM likes WHERE post_id = p.id) as like_count,
@@ -114,20 +143,21 @@ $stmt_posts->execute();
 $posts = $stmt_posts->get_result();
 
 // ============================================================
-// AMBIL TRENDING HASHTAG
+// AMBIL TRENDING HASHTAG (dari posts DAN comments)
 // ============================================================
 $sql_trending = "SELECT hashtag, COUNT(*) as total FROM (
+    -- Hashtag dari posts
     SELECT SUBSTRING_INDEX(SUBSTRING_INDEX(content, '#', -1), ' ', 1) as hashtag
-    FROM posts
-    WHERE content LIKE '%#%'
+    FROM posts WHERE content LIKE '%#%'
     UNION ALL
     SELECT SUBSTRING_INDEX(SUBSTRING_INDEX(content, '#', -2), ' ', 1)
-    FROM posts
-    WHERE content LIKE '%#%#%'
+    FROM posts WHERE content LIKE '%#%#%'
     UNION ALL
     SELECT SUBSTRING_INDEX(SUBSTRING_INDEX(content, '#', -3), ' ', 1)
-    FROM posts
-    WHERE content LIKE '%#%#%#%'
+    FROM posts WHERE content LIKE '%#%#%#%'
+    UNION ALL
+    -- Hashtag dari comments (via tabel comment_hashtags)
+    SELECT hashtag FROM comment_hashtags
 ) as all_tags
 WHERE hashtag IS NOT NULL AND hashtag != '' AND hashtag NOT REGEXP '[^a-zA-Z0-9_]'
 GROUP BY hashtag
@@ -746,7 +776,6 @@ function highlight_hashtags($text) {
                     <div class="post-time"><?= time_elapsed($post['created_at']) ?></div>
                 </div>
 
-                <!-- TAMPILKAN CONTENT SAJA (TANPA JUDUL) -->
                 <div class="post-content">
                     <?= nl2br(highlight_hashtags($post['content'])) ?>
                 </div>
@@ -781,7 +810,7 @@ function highlight_hashtags($text) {
                             <img src="<?= foto_url($comment['foto']) ?>" class="comment-avatar">
                             <div class="comment-body">
                                 <div class="comment-author"><?= nama_tampil($comment['nama_lengkap'], $comment['username']) ?></div>
-                                <div class="comment-text"><?= nl2br(htmlspecialchars($comment['content'])) ?></div>
+                                <div class="comment-text"><?= nl2br(highlight_hashtags($comment['content'])) ?></div>
                                 <?php if (!empty($comment['gambar'])): ?>
                                     <div class="comment-image">
                                         <img src="../uploads/<?= htmlspecialchars($comment['gambar']) ?>" 
@@ -796,7 +825,7 @@ function highlight_hashtags($text) {
 
                     <form method="POST" enctype="multipart/form-data" class="comment-form" id="comment-form-<?= $post['id'] ?>">
                         <input type="hidden" name="post_id" value="<?= $post['id'] ?>">
-                        <textarea name="comment_content" placeholder="Tulis komentar..." rows="2" required></textarea>
+                        <textarea name="comment_content" placeholder="Tulis komentar... (contoh: #furab)" rows="2" required></textarea>
                         <div class="comment-upload">
                             <label for="comment_image_<?= $post['id'] ?>" class="upload-btn">📷 Tambah Foto</label>
                             <input type="file" name="comment_image" id="comment_image_<?= $post['id'] ?>" accept="image/*" style="display: none;" onchange="showFileName(this, 'file_name_<?= $post['id'] ?>')">

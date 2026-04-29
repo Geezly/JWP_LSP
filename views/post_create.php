@@ -25,13 +25,10 @@ $user = $st_user->get_result()->fetch_assoc();
 // ── PROSES BUAT POST ──────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    $judul       = trim($_POST['judul']);
     $konten      = trim($_POST['konten']);
     $gambar_baru = null;
 
-    if (empty($judul)) {
-        $error = "Judul post tidak boleh kosong.";
-    } elseif (empty($konten)) {
+    if (empty($konten)) {
         $error = "Konten post tidak boleh kosong.";
     } else {
         if (!empty($_FILES['gambar']['name'])) {
@@ -55,15 +52,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if (empty($error)) {
-           $sql = "INSERT INTO posts (user_id, judul, content, image, created_at)
-            VALUES (?, ?, ?, ?, NOW())";
+           $sql = "INSERT INTO posts (user_id, content, image, created_at)
+            VALUES (?, ?, ?, NOW())";
             $st  = $conn->prepare($sql);
-            $st->bind_param("isss", $logged_in_id, $judul, $konten, $gambar_baru);
+            $st->bind_param("iss", $logged_in_id, $konten, $gambar_baru);
             $st->execute();
-            $notif = "Post berhasil dipublikasikan!";
-            // reset form after success? optional: redirect with success
-            // header("Location: home.php?notif=post_success");
-            // exit;
+            header("Location: home.php?notif=post_success");
+            exit;
         }
     }
 }
@@ -182,32 +177,6 @@ function nama_tampil($n, $u) {
 
         .icon-btn.logout { color: rgba(192,100,80,0.6); }
         .icon-btn.logout:hover { background: rgba(192,80,60,0.12); color: #e07060; }
-
-        .create-btn {
-            width: 44px; height: 44px;
-            background: var(--brown-warm);
-            border-radius: 12px;
-            display: flex; align-items: center; justify-content: center;
-            text-decoration: none; color: var(--white);
-            margin-bottom: 10px;
-            transition: background 0.2s, transform 0.2s;
-            flex-shrink: 0; position: relative;
-        }
-
-        .create-btn:hover { background: var(--brown-light); transform: scale(1.06); }
-        .create-btn svg { width: 20px; height: 20px; }
-        .create-btn::after {
-            content: 'Buat Postingan';
-            position: absolute; left: calc(100% + 14px); top: 50%;
-            transform: translateY(-50%);
-            background: var(--ink); color: var(--cream);
-            font-size: 11.5px; font-weight: 500;
-            white-space: nowrap; padding: 5px 10px;
-            border-radius: 4px; pointer-events: none;
-            opacity: 0; transition: opacity 0.15s;
-            letter-spacing: 0.04em; z-index: 100;
-        }
-        .create-btn:hover::after { opacity: 1; }
 
         .sidebar-avatar {
             width: 34px; height: 34px;
@@ -597,7 +566,7 @@ function nama_tampil($n, $u) {
 </head>
 <body>
 
-<!-- ICON SIDEBAR (sama persis dengan profile.php) -->
+<!-- ICON SIDEBAR -->
 <aside class="icon-sidebar">
     <div class="logo-mark">
         <svg viewBox="0 0 24 24"><path d="M12 2L2 7v10l10 5 10-5V7L12 2zm0 2.18L20 8.5v7L12 19.82 4 15.5v-7L12 4.18z"/></svg>
@@ -610,32 +579,20 @@ function nama_tampil($n, $u) {
                 <polyline points="9 22 9 12 15 12 15 22"/>
             </svg>
         </a>
-        <a href="#" class="icon-btn" data-tip="Jelajahi">
+        <a href="post_create.php" class="icon-btn active" data-tip="Buat Postingan">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
         </a>
-        <a href="#" class="icon-btn" data-tip="Notifikasi">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-            </svg>
-        </a>
-        <a href="profile.php" class="icon-btn" data-tip="Profil Saya">
+        <a href="user_profile.php" class="icon-btn" data-tip="Profil Saya">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                 <circle cx="12" cy="7" r="4"/>
             </svg>
         </a>
     </nav>
-
     <div class="icon-nav-bottom">
-        <a href="post_create.php" class="create-btn active">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
-        </a>
-        <a href="../views/logout.php" class="icon-btn logout" data-tip="Keluar">
+        <a href="logout.php" class="icon-btn logout" data-tip="Keluar">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
                 <polyline points="16 17 21 12 16 7"/>
@@ -714,21 +671,6 @@ function nama_tampil($n, $u) {
                     </div>
 
                     <!-- JUDUL -->
-                    <div class="form-group">
-                        <label for="inp-judul">Judul Postingan<span class="field-required">*</span></label>
-                        <input type="text"
-                               id="inp-judul"
-                               name="judul"
-                               class="form-input"
-                               placeholder="Tulis judul yang menarik..."
-                               maxlength="150"
-                               required
-                               oninput="updateJudulCount(this)">
-                        <div class="char-row">
-                            <span class="count" id="judul-count">0</span>&nbsp;/ 150
-                        </div>
-                    </div>
-
                     <!-- KONTEN -->
                     <div class="form-group">
                         <label for="inp-konten">Isi Postingan<span class="field-required">*</span></label>
@@ -873,10 +815,6 @@ function removeImage(e) {
     removeBtn.style.display = 'none';
     area.querySelector('.upload-icon').style.display = 'block';
     area.querySelector('.upload-label').style.display = 'block';
-}
-
-function updateJudulCount(el) {
-    document.getElementById('judul-count').textContent = el.value.length;
 }
 
 function updateKontenCount(el) {
