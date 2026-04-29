@@ -3,7 +3,6 @@
  * Project: Interaksi - Logout Script
  */
 
-// 1. Mulai session agar kita bisa mengakses data session yang sedang aktif
 session_start();
 
 // 2. Kosongkan semua data di dalam array $_SESSION
@@ -18,10 +17,10 @@ if (ini_get("session.use_cookies")) {
     );
 }
 
-// 4. Hancurkan session secara total di sisi server
+
 session_destroy();
 
-// 5. Redirect user kembali ke halaman login
+
 header("Location: login.php");
 exit;
 ?>
